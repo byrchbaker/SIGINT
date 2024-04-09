@@ -28,15 +28,55 @@ Invoke-RestMethod @splatting | Foreach-Object {
         # Weather seed
         $seed = ($PSItem.temperature) + ($PSItem.windSpeed | ForEach-Object { $PSItem.split(' ')[0] }) + ($PSItem.probabilityOfPrecipitation.value)
     
+        $splatting = @{
+            Minimum = 1000000000000000
+            Maximum = 9999999999999999
+            SetSeed = $seed
+        }
+
         # Get a seed based on weather
-        $1 = Get-Random -Minimum 1000000000 -Maximum 9999999999 -SetSeed $seed
-        $2 = Get-Random -Minimum 1000000000 -Maximum 9999999999 -SetSeed ([datetime]::Now.TimeOfDay.TotalSeconds)
+        $weatherKey = Get-Random @splatting
+        $weatherKeyBytes = [System.Text.Encoding]::UTF8.GetBytes($weatherKey.ToString())
+
+        $splatting = @{
+            Minimum = 1000000000000000
+            Maximum = 9999999999999999
+            SetSeed = ([datetime]::Now.TimeOfDay.TotalMinutes)
+        }
+
+        $timeKey = Get-Random @splatting 
+        $timeKeyBytes = [System.Text.Encoding]::UTF8.GetBytes($timeKey.ToString())
+        
+        $splatting = @{
+            SecureString = (ConvertTo-SecureString -String $message -AsPlainText -Force)
+            Key = ($timeKeyBytes + $weatherKeyBytes)
+        }
+
+        # AES-256
+        $encrypted = ConvertFrom-SecureString @splatting
+
+
+        $binary = [System.Text.Encoding]::Default.GetBytes($encrypted) | ForEach-Object {[System.Convert]::ToString($_,2).PadLeft(8,'0') }
+
+        $freqOne = 1000  
+        $freqZero = 500  
+        $duration = 50  
+
+        foreach ($bit in $binary) {
+            foreach ($char in $bit.ToCharArray()) {
+                if ($char -eq '1') {
+                    [Console]::Beep($freqOne, $duration)
+                } elseif ($char -eq '0') {
+                    [Console]::Beep($freqZero, $duration)
+                } else {
+                    # Handle invalid characters if any
+                }
+            }
+        }
     }
 }
 
-# Time seed will always be off for listening unless there some kind of offset
 
-$message
-$1 + $2
+
 
 
