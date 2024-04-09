@@ -33,6 +33,9 @@ Invoke-RestMethod @splatting | Foreach-Object {
         $2 = Get-Random -Minimum 1000000000 -Maximum 9999999999 -SetSeed ([datetime]::Now.TimeOfDay.TotalSeconds)
     }
 }
+
+# Time seed will always be off for listening unless there some kind of offset
+
 $message
 $1 + $2
 
